@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "preinstall": "npm install --build-from-source better-sqlite3",
     "start": "node backend/server.js"
   },
   "dependencies": {

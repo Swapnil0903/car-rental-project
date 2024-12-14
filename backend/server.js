@@ -1,61 +1,46 @@
 const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
+const Database = require("better-sqlite3"); // Importing better-sqlite3
 
 const app = express();
 
 // Use dynamic port for deployment compatibility
-const PORT = process.env.PORT || 3000; // Fix: Use Render-assigned PORT if available
+const PORT = process.env.PORT || 3000; // Use Render-assigned PORT if available
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from the public directory
-app.use(express.static(path.join(__dirname, "../public"))); // Fix: Ensure static files are served correctly
+app.use(express.static(path.join(__dirname, "../public")));
 console.log("Serving static files from:", path.join(__dirname, "../public"));
 
 // Database Connection
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, "../database/database.sqlite"); // Fix: Add option for Render Disks
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error("Error connecting to the database:", err.message);
-  } else {
-    console.log(`Connected to SQLite database at ${dbPath}`);
-  }
-});
-
-// Add optional SQL trace logs for debugging (Render-specific)
-db.on("trace", (sql) => {
-  console.log(`Executing SQL: ${sql}`);
-});
-db.on("profile", (sql, time) => {
-  console.log(`Executed SQL: ${sql} in ${time}ms`);
-});
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, "../database/database.sqlite");
+const db = new Database(dbPath, { verbose: console.log }); // Verbose logs SQL queries
+console.log(`Connected to SQLite database at ${dbPath}`);
 
 /** Health Check Route **/
 app.get("/healthz", (req, res) => {
-  // Fix: Health check for Render to ensure service is running
   res.status(200).send("OK");
 });
 
 /** Profile Management APIs **/
-
 app.get("/api/profile", (req, res) => {
   const userId = 1; // Replace with session-based user ID in a real app
   const query = "SELECT name, email, mobile FROM users WHERE id = ?";
-  db.get(query, [userId], (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ message: "Failed to fetch profile." });
-    }
+  try {
+    const row = db.prepare(query).get(userId); // better-sqlite3 uses `.prepare().get()`
     res.status(200).json(row || {});
-  });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Failed to fetch profile." });
+  }
 });
 
 /** Vehicle Management APIs **/
 
-// Add vehicle (Updated to include `registration_number` and `vehicle_number`)
+// Add vehicle
 app.post("/api/vehicles", (req, res) => {
   const ownerId = 1; // Replace with session-based user ID in a real app
   const { model, price, location, registration_number, vehicle_number } = req.body;
@@ -64,42 +49,43 @@ app.post("/api/vehicles", (req, res) => {
     return res.status(400).json({ message: "All fields are required." });
   }
 
-  const query = `
-    INSERT INTO vehicles (model, owner_id, price, location, registration_number, vehicle_number, availability_status)
-    VALUES (?, ?, ?, ?, ?, ?, 'Available')
-  `;
-  db.run(query, [model, ownerId, price, location, registration_number, vehicle_number], function (err) {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ message: "Failed to add vehicle." });
-    }
-    res.status(201).json({ message: "Vehicle registered successfully!", vehicleId: this.lastID });
-  });
+  try {
+    const query = `
+      INSERT INTO vehicles (model, owner_id, price, location, registration_number, vehicle_number, availability_status)
+      VALUES (?, ?, ?, ?, ?, ?, 'Available')
+    `;
+    const stmt = db.prepare(query);
+    const info = stmt.run(model, ownerId, price, location, registration_number, vehicle_number);
+    res.status(201).json({ message: "Vehicle registered successfully!", vehicleId: info.lastInsertRowid });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Failed to add vehicle." });
+  }
 });
 
 // Get all available vehicles
 app.get("/api/vehicles", (req, res) => {
-  const query = "SELECT * FROM vehicles WHERE availability_status = 'Available'";
-  db.all(query, [], (err, rows) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ message: "Failed to fetch vehicles." });
-    }
+  try {
+    const query = "SELECT * FROM vehicles WHERE availability_status = 'Available'";
+    const rows = db.prepare(query).all();
     res.status(200).json(rows);
-  });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Failed to fetch vehicles." });
+  }
 });
 
 // Get vehicles owned by the user
 app.get("/api/my-vehicles", (req, res) => {
   const ownerId = 1; // Replace with session-based user ID in a real app
-  const query = "SELECT * FROM vehicles WHERE owner_id = ?";
-  db.all(query, [ownerId], (err, rows) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ message: "Failed to fetch vehicles." });
-    }
+  try {
+    const query = "SELECT * FROM vehicles WHERE owner_id = ?";
+    const rows = db.prepare(query).all(ownerId);
     res.status(200).json(rows || []);
-  });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Failed to fetch vehicles." });
+  }
 });
 
 /** Booking Management APIs **/
@@ -112,97 +98,70 @@ app.post("/api/bookings", (req, res) => {
     return res.status(400).json({ message: "All fields are required." });
   }
 
-  // Check if the vehicle is available
-  const checkQuery = `SELECT availability_status FROM vehicles WHERE id = ?`;
-  db.get(checkQuery, [vehicle_id], (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ message: "Error checking vehicle availability." });
-    }
+  try {
+    const checkQuery = "SELECT availability_status FROM vehicles WHERE id = ?";
+    const vehicle = db.prepare(checkQuery).get(vehicle_id);
 
-    if (!row || row.availability_status !== "Available") {
+    if (!vehicle || vehicle.availability_status !== "Available") {
       return res.status(400).json({ message: "Vehicle is not available for booking." });
     }
 
-    // Proceed with booking
     const bookingQuery = `
       INSERT INTO bookings (user_id, vehicle_id, from_date, to_date)
       VALUES (?, ?, ?, ?)
     `;
-    db.run(bookingQuery, [user_id, vehicle_id, from_date, to_date], function (err) {
-      if (err) {
-        console.error(err.message);
-        return res.status(500).json({ message: "Failed to create booking." });
-      }
+    const stmt = db.prepare(bookingQuery);
+    const info = stmt.run(user_id, vehicle_id, from_date, to_date);
 
-      // Update the vehicle's availability status
-      const updateQuery = `UPDATE vehicles SET availability_status = 'Booked' WHERE id = ?`;
-      db.run(updateQuery, [vehicle_id], function (err) {
-        if (err) {
-          console.error(err.message);
-          return res.status(500).json({ message: "Failed to update vehicle status." });
-        }
+    const updateQuery = "UPDATE vehicles SET availability_status = 'Booked' WHERE id = ?";
+    db.prepare(updateQuery).run(vehicle_id);
 
-        res.status(201).json({ message: "Booking created successfully!", bookingId: this.lastID });
-      });
-    });
-  });
+    res.status(201).json({ message: "Booking created successfully!", bookingId: info.lastInsertRowid });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Failed to create booking." });
+  }
 });
 
 // Get all bookings
 app.get("/api/bookings", (req, res) => {
-  const query = `
-    SELECT bookings.id, vehicles.model AS vehicle_model, bookings.from_date, bookings.to_date
-    FROM bookings
-    JOIN vehicles ON bookings.vehicle_id = vehicles.id
-  `;
-  db.all(query, [], (err, rows) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ message: "Failed to fetch bookings." });
-    }
+  try {
+    const query = `
+      SELECT bookings.id, vehicles.model AS vehicle_model, bookings.from_date, bookings.to_date
+      FROM bookings
+      JOIN vehicles ON bookings.vehicle_id = vehicles.id
+    `;
+    const rows = db.prepare(query).all();
     res.status(200).json(rows || []);
-  });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Failed to fetch bookings." });
+  }
 });
 
-// Cancel a booking and update vehicle status
+// Cancel a booking
 app.delete("/api/bookings/:id", (req, res) => {
   const { id } = req.params;
 
-  // Get the vehicle ID associated with the booking
-  const getVehicleQuery = `SELECT vehicle_id FROM bookings WHERE id = ?`;
-  db.get(getVehicleQuery, [id], (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ message: "Error fetching booking details." });
-    }
+  try {
+    const getVehicleQuery = "SELECT vehicle_id FROM bookings WHERE id = ?";
+    const booking = db.prepare(getVehicleQuery).get(id);
 
-    if (!row) {
+    if (!booking) {
       return res.status(404).json({ message: "Booking not found." });
     }
 
-    const vehicleId = row.vehicle_id;
-
-    // Delete the booking
     const deleteQuery = "DELETE FROM bookings WHERE id = ?";
-    db.run(deleteQuery, [id], function (err) {
-      if (err) {
-        console.error(err.message);
-        return res.status(500).json({ message: "Failed to cancel booking." });
-      }
+    db.prepare(deleteQuery).run(id);
 
-      // Update the vehicle's availability status
-      const updateQuery = `UPDATE vehicles SET availability_status = 'Available' WHERE id = ?`;
-      db.run(updateQuery, [vehicleId], function (err) {
-        if (err) {
-          console.error(err.message);
-          return res.status(500).json({ message: "Failed to update vehicle status." });
-        }
+    const updateQuery = "UPDATE vehicles SET availability_status = 'Available' WHERE id = ?";
+    db.prepare(updateQuery).run(booking.vehicle_id);
 
-        res.status(200).json({ message: "Booking canceled successfully!" });
-      });
-    });
-  });
+    res.status(200).json({ message: "Booking canceled successfully!" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Failed to cancel booking." });
+  }
 });
 
 // Default Route for Missing APIs
@@ -212,5 +171,5 @@ app.use((req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`); // Fix: Reflect dynamic port in logs
+  console.log(`Server running at http://localhost:${PORT}`); // Reflect dynamic port in logs
 });
