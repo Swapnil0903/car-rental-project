@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wheelocity - Dashboard</title> <!-- Updated Title -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="login-bg">
+  <div class="login-container">
+    <!-- Branding Section -->
+    <div class="login-card animate-slide-up">
+      <h1>Welcome to <span class="brand-name">Wheelocity</span></h1> <!-- Updated Branding -->
+      <p class="tagline">Your Ultimate Car Rental Experience</p> <!-- Added Tagline -->
+
+      <!-- Updated Login Form -->
+      <form id="login-form" class="login-form">
+        <div class="input-container"> <!-- Input Group with Icon -->
+          <span class="input-icon">&#128100;</span> <!-- User Icon -->
+          <input type="text" id="username" placeholder="Enter Username" required>
+        </div>
+        <div class="input-container"> <!-- Input Group with Icon -->
+          <span class="input-icon">&#128274;</span> <!-- Lock Icon -->
+          <input type="password" id="password" placeholder="Enter Password" required>
+        </div>
+        <button type="submit">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Content for Vehicle List -->
+  <div id="main-content">
+    <section id="vehicle-list" class="hidden">
+      <!-- Dynamic vehicle cards will be rendered here -->
+    </section>
+  </div>
+
+  <!-- Booking Modal -->
+  <div id="booking-modal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn" id="close-modal">&times;</span>
+      <h2>Confirm Your Booking</h2>
+      <p id="vehicle-details"></p>
+      <button id="confirm-booking">Confirm</button>
+    </div>
+  </div>
+
+  <!-- Footer Section -->
+  <footer class="login-footer">
+    <p>&copy; 2024 <span class="brand-name">Wheelocity</span>. All rights reserved.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

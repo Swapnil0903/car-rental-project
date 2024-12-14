@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up - Wheelocity</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="login-bg">
+  <div class="login-container">
+    <div class="login-card animate-slide-up">
+      <h1 class="brand-name">Wheelocity</h1>
+      <p class="tagline">Sign up to experience the difference in car rentals.</p>
+      <form id="signup-form" class="login-form">
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="email" id="email" placeholder="Email Address" required>
+        <input type="text" id="mobile" placeholder="Mobile Number" required>
+        <input type="password" id="password" placeholder="Create Password" required>
+        <button type="submit">Sign Up</button>
+      </form>
+      <div class="additional-links">
+        Already have an account? <a href="index.html">Login</a>
+      </div>
+    </div>
+  </div>
+</body>
+<script>
+  document.getElementById("signup-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    alert("Sign-Up functionality to be implemented!");
+  });
+</script>
+</html>

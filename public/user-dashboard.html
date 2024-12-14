@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"> <!-- Font Awesome -->
+</head>
+<body>
+  <!-- Dashboard Header -->
+  <header class="dashboard-header">
+    <div class="header-left">
+      <img src="images/logo.png" alt="Brand Logo" class="brand-logo" />
+      <h1>Welcome, <span id="username-display"></span>!</h1>
+    </div>
+    <nav class="header-right">
+      <a href="#dashboard" class="nav-link"><i class="fas fa-home"></i> Dashboard</a>
+      <a href="#vehicle-list" class="nav-link"><i class="fas fa-car"></i> Available Vehicles</a>
+      <a href="#bookings" class="nav-link"><i class="fas fa-book"></i> My Bookings</a>
+      <div class="dropdown">
+        <button class="dropdown-button">
+          <i class="fas fa-user"></i> Account <i class="fas fa-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu hidden">
+          <li><a href="#profile">Profile</a></li>
+          <li><a href="#settings">Settings</a></li>
+          <li><a href="#logout">Logout</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Dashboard Main Section -->
+    <section id="dashboard">
+      <div class="card-container">
+        <div class="card">
+          <h3><i class="fas fa-plus-circle"></i> Register a Vehicle</h3>
+          <p>Add your vehicle to the rental platform and earn money by renting it out.</p>
+          <button onclick="navigateTo('my-vehicles')" class="btn btn-success">Go to Registration</button>
+        </div>
+        <div class="card">
+          <h3><i class="fas fa-car"></i> Find a Vehicle to Rent</h3>
+          <p>Browse through our available vehicles and book your ride now.</p>
+          <button onclick="navigateTo('vehicle-list')" class="btn btn-primary">Browse Vehicles</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Available Vehicles Section -->
+    <section id="vehicle-list" class="hidden">
+      <h2 class="section-title"><i class="fas fa-car"></i> Available Vehicles</h2>
+      <div id="vehicle-container" class="card-container">
+        <p class="loading">Loading vehicles...</p>
+      </div>
+    </section>
+
+    <!-- My Bookings Section -->
+    <section id="bookings" class="hidden">
+      <h2 class="section-title"><i class="fas fa-book"></i> Your Bookings</h2>
+      <div id="booking-list" class="card-container">
+        <p class="loading">Loading bookings...</p>
+      </div>
+    </section>
+
+    <!-- Profile Section -->
+    <section id="profile" class="hidden">
+      <h2 class="section-title"><i class="fas fa-user"></i> Profile</h2>
+      <form id="profile-form" class="profile-form">
+        <label for="profile-name">Name:</label>
+        <input type="text" id="profile-name" required>
+        <label for="profile-email">Email:</label>
+        <input type="email" id="profile-email" required>
+        <label for="profile-mobile">Mobile:</label>
+        <input type="text" id="profile-mobile" required>
+        <button type="submit" class="btn btn-primary">Update Profile</button>
+      </form>
+    </section>
+
+    <!-- My Vehicles Section -->
+    <section id="my-vehicles" class="hidden">
+      <h2 class="section-title"><i class="fas fa-cogs"></i> My Vehicles</h2>
+      <form id="vehicle-form" class="vehicle-form">
+        <label for="vehicle-model">Model:</label>
+        <input type="text" id="vehicle-model" required>
+        <label for="vehicle-price">Price:</label>
+        <input type="number" id="vehicle-price" required>
+        <label for="vehicle-location">Current Location:</label> <!-- Highlighted New Field -->
+        <select id="vehicle-location" required>
+          <option value="Delhi">Delhi</option>
+          <option value="Mumbai">Mumbai</option>
+          <option value="Bangalore">Bangalore</option>
+          <option value="Chennai">Chennai</option>
+        </select>
+        <label for="vehicle-registration-number">Registration Number:</label>
+        <input type="text" id="vehicle-registration-number" required>
+        <label for="vehicle-number">Vehicle Number:</label>
+        <input type="text" id="vehicle-number" required>
+        <button type="submit" class="btn btn-primary">Add Vehicle</button>
+      </form>
+      <div id="my-vehicle-list" class="card-container">
+        <p class="loading">Loading your vehicles...</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Booking Modal -->
+  <div id="booking-modal" class="modal hidden">
+    <div class="modal-content">
+      <!-- Booking modal content dynamically added -->
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Dashboard Footer -->
+  <footer class="dashboard-footer">
+    <div class="footer-left">
+      <p>&copy; 2024 Wheelocity. All Rights Reserved.</p>
+    </div>
+    <div class="footer-right">
+      <a href="#terms">Terms of Service</a>
+      <a href="#privacy">Privacy Policy</a>
+      <a href="#contact">Contact Us</a>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    function navigateTo(sectionId) {
+      const sections = document.querySelectorAll("main > section");
+      sections.forEach((section) => section.classList.add("hidden")); // Hide all sections
+      const targetSection = document.getElementById(sectionId);
+      if (targetSection) {
+        targetSection.classList.remove("hidden"); // Show target section
+      } else {
+        console.error("Section not found:", sectionId);
+      }
+    }
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
