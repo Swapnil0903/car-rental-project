@@ -3,21 +3,40 @@ const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
 const app = express();
-const PORT = 3000;
+
+// Use dynamic port for deployment compatibility
+const PORT = process.env.PORT || 3000; // Fix: Use Render-assigned PORT if available
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "../public")));
+
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, "../public"))); // Fix: Ensure static files are served correctly
+console.log("Serving static files from:", path.join(__dirname, "../public"));
 
 // Database Connection
-const dbPath = path.join(__dirname, "../database/database.sqlite");
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, "../database/database.sqlite"); // Fix: Add option for Render Disks
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error("Error connecting to the database:", err.message);
   } else {
-    console.log("Connected to the SQLite database.");
+    console.log(`Connected to SQLite database at ${dbPath}`);
   }
+});
+
+// Add optional SQL trace logs for debugging (Render-specific)
+db.on("trace", (sql) => {
+  console.log(`Executing SQL: ${sql}`);
+});
+db.on("profile", (sql, time) => {
+  console.log(`Executed SQL: ${sql} in ${time}ms`);
+});
+
+/** Health Check Route **/
+app.get("/healthz", (req, res) => {
+  // Fix: Health check for Render to ensure service is running
+  res.status(200).send("OK");
 });
 
 /** Profile Management APIs **/
@@ -193,5 +212,5 @@ app.use((req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`); // Fix: Reflect dynamic port in logs
 });
